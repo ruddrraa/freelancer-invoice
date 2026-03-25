@@ -34,8 +34,9 @@ export async function GET(req: NextRequest) {
             },
           },
         },
-        { $sort: { _id: 1 } },
+        { $sort: { _id: -1 } },
         { $limit: 12 },
+        { $sort: { _id: 1 } },
       ]),
       ActivityLog.find({ userId }).sort({ createdAt: -1 }).limit(12).lean(),
     ]);

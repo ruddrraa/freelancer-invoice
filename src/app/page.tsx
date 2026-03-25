@@ -12,16 +12,16 @@ export default async function Home() {
   }
 
   return (
-    <main className="relative min-h-screen overflow-hidden bg-[radial-gradient(circle_at_15%_20%,#ccfbf1,transparent_35%),radial-gradient(circle_at_80%_30%,#ffedd5,transparent_38%),linear-gradient(140deg,#f8fafc,#eef2ff)] px-6 py-12">
+    <main className="mono-grid relative min-h-screen overflow-hidden bg-zinc-100 px-6 py-12">
       <div className="mx-auto max-w-5xl">
-        <div className="fade-up rounded-3xl border border-white/70 bg-white/75 p-10 shadow-2xl backdrop-blur md:p-14">
-          <p className="mb-3 inline-flex rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold uppercase tracking-[0.2em] text-slate-700">
-            SaaS Invoice Suite
+        <div className="fade-up rounded-3xl border border-zinc-300 bg-white p-10 shadow-[0_24px_60px_-40px_rgba(0,0,0,0.9)] md:p-14">
+          <p className="mb-3 inline-flex rounded-full border border-zinc-300 px-3 py-1 text-xs font-semibold uppercase tracking-[0.2em] text-zinc-700">
+            Premium Invoice Suite
           </p>
-          <h1 className="max-w-3xl text-4xl font-bold leading-tight text-slate-900 md:text-6xl">
+          <h1 className="max-w-3xl text-4xl font-bold leading-tight text-zinc-900 md:text-6xl">
             Manage global freelance invoices with built-in payments and automation
           </h1>
-          <p className="mt-5 max-w-2xl text-slate-600 md:text-lg">
+          <p className="mt-5 max-w-2xl text-zinc-600 md:text-lg">
             Smart invoice creation, domestic UPI flows, international payment links, PDF/email delivery,
             and real-time payment tracking in one production-grade platform.
           </p>

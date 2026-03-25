@@ -3,6 +3,7 @@ import mongoose, { InferSchemaType, Model } from "mongoose";
 const UserSchema = new mongoose.Schema(
   {
     name: { type: String, required: true },
+    companyName: { type: String, default: "" },
     email: { type: String, required: true, unique: true, index: true, lowercase: true },
     passwordHash: { type: String },
     phone: { type: String, default: "" },
@@ -13,6 +14,8 @@ const UserSchema = new mongoose.Schema(
     paypalEmail: { type: String, default: "" },
     wiseDetailsEncrypted: { type: String, default: "" },
     stripePaymentLink: { type: String, default: "" },
+    smtpSenderEmail: { type: String, default: "" },
+    smtpAppPasswordEncrypted: { type: String, default: "" },
     defaultCurrency: { type: String, default: "INR" },
     oauthProviders: {
       googleSub: { type: String, default: "" },
@@ -22,6 +25,10 @@ const UserSchema = new mongoose.Schema(
 );
 
 export type UserDocument = InferSchemaType<typeof UserSchema> & { _id: mongoose.Types.ObjectId };
+
+if (process.env.NODE_ENV !== "production" && mongoose.models.User) {
+  delete mongoose.models.User;
+}
 
 const User = (mongoose.models.User as Model<UserDocument>) ||
   mongoose.model<UserDocument>("User", UserSchema);

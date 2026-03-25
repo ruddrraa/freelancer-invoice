@@ -1,5 +1,4 @@
 import nodemailer from "nodemailer";
-import { Resend } from "resend";
 import { env } from "@/lib/env";
 
 type SendInvoiceMailInput = {
@@ -8,14 +7,46 @@ type SendInvoiceMailInput = {
   html: string;
   pdfBuffer: Buffer;
   invoiceNumber: string;
+  senderName?: string;
+  smtpConfig?: {
+    email: string;
+    appPassword: string;
+  };
 };
 
+function resolvePersonalSmtpHost(email: string) {
+  const domain = email.split("@")[1]?.toLowerCase() || "";
+  if (["gmail.com", "googlemail.com"].includes(domain)) {
+    return { host: "smtp.gmail.com", port: 587, secure: false };
+  }
+  if (["outlook.com", "hotmail.com", "live.com", "msn.com", "office365.com"].includes(domain)) {
+    return { host: "smtp.office365.com", port: 587, secure: false };
+  }
+  return null;
+}
+
 export async function sendInvoiceMail(input: SendInvoiceMailInput) {
-  if (env.RESEND_API_KEY) {
-    const resend = new Resend(env.RESEND_API_KEY);
-    await resend.emails.send({
-      from: "Freelancer Invoice <no-reply@yourdomain.com>",
-      to: [input.to],
+  if (input.smtpConfig?.email && input.smtpConfig.appPassword) {
+    const smtp = resolvePersonalSmtpHost(input.smtpConfig.email);
+    if (!smtp) {
+      throw new Error("Only Gmail/Outlook personal SMTP is supported in profile mail settings");
+    }
+
+    const transporter = nodemailer.createTransport({
+      host: smtp.host,
+      port: smtp.port,
+      secure: smtp.secure,
+      auth: {
+        user: input.smtpConfig.email,
+        pass: input.smtpConfig.appPassword,
+      },
+    });
+
+    const fromAddress = `${input.senderName || env.APP_NAME} <${input.smtpConfig.email}>`;
+
+    await transporter.sendMail({
+      from: fromAddress,
+      to: input.to,
       subject: input.subject,
       html: input.html,
       attachments: [
@@ -28,8 +59,10 @@ export async function sendInvoiceMail(input: SendInvoiceMailInput) {
     return;
   }
 
+  const fromAddress = env.MAIL_FROM || (env.SMTP_USER ? `${env.APP_NAME} <${env.SMTP_USER}>` : undefined);
+
   if (!env.SMTP_HOST || !env.SMTP_PORT || !env.SMTP_USER || !env.SMTP_PASS) {
-    throw new Error("No email provider is configured");
+    throw new Error("No SMTP email provider is configured");
   }
 
   const transporter = nodemailer.createTransport({
@@ -43,7 +76,7 @@ export async function sendInvoiceMail(input: SendInvoiceMailInput) {
   });
 
   await transporter.sendMail({
-    from: `Freelancer Invoice <${env.SMTP_USER}>`,
+    from: fromAddress,
     to: input.to,
     subject: input.subject,
     html: input.html,

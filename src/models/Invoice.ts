@@ -25,6 +25,7 @@ const InvoiceSchema = new mongoose.Schema(
     },
     issuerSnapshot: {
       name: { type: String, required: true },
+      companyName: { type: String, default: "" },
       email: { type: String, required: true },
       phone: { type: String, default: "" },
       address: { type: String, default: "" },

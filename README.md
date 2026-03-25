@@ -143,6 +143,41 @@ npm install
 - Copy `.env.example` into `.env.local`
 - Fill MongoDB, JWT, and provider keys
 
+### Environment Variables (What to put)
+
+Minimum required to run core app:
+
+- `MONGODB_URI`: MongoDB Atlas connection string
+- `JWT_SECRET`: long random secret for JWT signing
+- `ENCRYPTION_KEY`: random key for encrypting bank/wise data
+
+Recommended base variables:
+
+- `APP_NAME`: app display name used in mail sender label
+- `NEXT_PUBLIC_APP_URL`: public app URL (local/prod)
+- `MONGODB_DB_NAME`: DB name (default `freelancer_invoice`)
+- `JWT_EXPIRES_IN`: token expiry (default `7d`)
+- `MAIL_FROM`: sender identity, example `Freelancer Invoice <no-reply@yourdomain.com>`
+
+Optional integrations (fill only if using that feature):
+
+- Google OAuth:
+	- `GOOGLE_CLIENT_ID`
+- Cloudinary uploads:
+	- `CLOUDINARY_CLOUD_NAME`
+	- `CLOUDINARY_API_KEY`
+	- `CLOUDINARY_API_SECRET`
+- Email provider (choose one):
+	- Resend: `RESEND_API_KEY` + `MAIL_FROM`
+	- SMTP: `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS`
+- Stripe payments/webhooks:
+	- `STRIPE_SECRET_KEY`
+	- `STRIPE_WEBHOOK_SECRET`
+- PayPal webhook:
+	- `PAYPAL_WEBHOOK_ID`
+- Currency conversion:
+	- `OPEN_EXCHANGE_API_KEY`
+
 3. Run locally
 
 ```bash

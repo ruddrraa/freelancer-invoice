@@ -8,9 +8,23 @@ export async function apiFetch<T>(url: string, options?: RequestInit): Promise<T
     credentials: "include",
   });
 
-  const payload = await response.json().catch(() => null);
+  const raw = await response.text();
+  let payload: { success?: boolean; message?: string; data?: T } | null = null;
+  if (raw) {
+    try {
+      payload = JSON.parse(raw) as { success?: boolean; message?: string; data?: T };
+    } catch {
+      payload = null;
+    }
+  }
   if (!response.ok || !payload?.success) {
-    throw new Error(payload?.message || "Request failed");
+    const textMessage =
+      typeof raw === "string" && raw.trim() && !raw.trim().startsWith("{")
+        ? raw.trim().slice(0, 180)
+        : "";
+    throw new Error(
+      payload?.message || textMessage || `${response.status} ${response.statusText}` || "Request failed"
+    );
   }
   return payload.data as T;
 }

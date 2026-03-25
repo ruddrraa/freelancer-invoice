@@ -37,10 +37,12 @@ export default function SignupPage() {
   }
 
   return (
-    <main className="grid min-h-screen place-items-center bg-[radial-gradient(circle_at_20%_20%,#dbeafe,transparent_40%),radial-gradient(circle_at_80%_30%,#ffe4e6,transparent_40%),#f8fafc] px-4">
+    <main className="mono-grid grid min-h-screen place-items-center bg-zinc-100 px-4">
       <Card className="w-full max-w-md">
         <CardTitle>Create account</CardTitle>
-        <p className="mt-1 text-sm text-slate-600">Start billing domestic and international clients.</p>
+        <p className="mt-1 text-sm text-zinc-600">
+          Start billing domestic and international clients.
+        </p>
 
         <form className="mt-5 space-y-3" onSubmit={onSubmit}>
           <Input name="name" placeholder="Your full name" required />
@@ -52,9 +54,9 @@ export default function SignupPage() {
           </Button>
         </form>
 
-        <p className="mt-4 text-sm text-slate-600">
+        <p className="mt-4 text-sm text-zinc-600">
           Already have an account?{" "}
-          <Link className="font-medium text-slate-900" href="/login">
+          <Link className="font-medium text-zinc-900" href="/login">
             Sign in
           </Link>
         </p>

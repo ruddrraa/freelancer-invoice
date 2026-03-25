@@ -20,7 +20,7 @@ export async function connectDb() {
   if (!cached.promise) {
     const uri = env.MONGODB_URI ?? requireEnv("MONGODB_URI");
     cached.promise = mongoose.connect(uri, {
-      dbName: "freelancer_invoice",
+      dbName: env.MONGODB_DB_NAME,
     });
   }
 

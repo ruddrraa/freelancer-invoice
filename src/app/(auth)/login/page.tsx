@@ -36,10 +36,10 @@ export default function LoginPage() {
   }
 
   return (
-    <main className="grid min-h-screen place-items-center bg-[radial-gradient(circle_at_20%_20%,#dbeafe,transparent_40%),radial-gradient(circle_at_80%_30%,#ffe4e6,transparent_40%),#f8fafc] px-4">
+    <main className="mono-grid grid min-h-screen place-items-center bg-zinc-100 px-4">
       <Card className="w-full max-w-md">
         <CardTitle>Welcome back</CardTitle>
-        <p className="mt-1 text-sm text-slate-600">Login to manage your global invoices.</p>
+        <p className="mt-1 text-sm text-zinc-600">Login to manage your global invoices.</p>
 
         <form className="mt-5 space-y-3" onSubmit={onSubmit}>
           <Input name="email" type="email" placeholder="you@example.com" required />
@@ -50,9 +50,9 @@ export default function LoginPage() {
           </Button>
         </form>
 
-        <p className="mt-4 text-sm text-slate-600">
+        <p className="mt-4 text-sm text-zinc-600">
           New here?{" "}
-          <Link className="font-medium text-slate-900" href="/signup">
+          <Link className="font-medium text-zinc-900" href="/signup">
             Create account
           </Link>
         </p>

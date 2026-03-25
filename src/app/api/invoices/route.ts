@@ -116,6 +116,7 @@ export async function POST(req: NextRequest) {
       clientSnapshot: parsed.data.clientSnapshot,
       issuerSnapshot: {
         name: user.name,
+        companyName: user.companyName,
         email: user.email,
         phone: user.phone,
         address: user.address,

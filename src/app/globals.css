@@ -1,9 +1,9 @@
 @import "tailwindcss";
 
 :root {
-  --background: #f8fafc;
-  --foreground: #0f172a;
-  --brand: #0f766e;
+  --background: #d7d9df;
+  --foreground: #25262b;
+  --brand: #111111;
 }
 
 @theme inline {
@@ -17,12 +17,7 @@ body {
   background: var(--background);
   color: var(--foreground);
   font-family: var(--font-sans), sans-serif;
-}
-
-.dark {
-  --background: #020617;
-  --foreground: #f8fafc;
-  --brand: #14b8a6;
+  letter-spacing: -0.01em;
 }
 
 h1,
@@ -34,6 +29,12 @@ h4 {
 
 .fade-up {
   animation: fadeUp 0.7s ease both;
+}
+
+.mono-grid {
+  background-image: linear-gradient(rgba(120, 126, 138, 0.12) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(120, 126, 138, 0.12) 1px, transparent 1px);
+  background-size: 24px 24px;
 }
 
 @keyframes fadeUp {

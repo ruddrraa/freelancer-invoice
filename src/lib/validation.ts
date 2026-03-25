@@ -13,6 +13,7 @@ export const loginSchema = z.object({
 
 export const profileSchema = z.object({
   name: z.string().min(2).max(80),
+  companyName: z.string().max(120).optional().or(z.literal("")),
   phone: z.string().max(30).optional().or(z.literal("")),
   address: z.string().max(300).optional().or(z.literal("")),
   logoUrl: z.url().optional().or(z.literal("")),
@@ -21,13 +22,17 @@ export const profileSchema = z.object({
   paypalEmail: z.email().optional().or(z.literal("")),
   wiseDetails: z.string().max(300).optional().or(z.literal("")),
   stripePaymentLink: z.url().optional().or(z.literal("")),
+  smtpSenderEmail: z.email().optional().or(z.literal("")),
+  smtpAppPassword: z.string().max(200).optional().or(z.literal("")),
   defaultCurrency: z.string().default("INR"),
 });
 
 export const clientSchema = z.object({
   name: z.string().min(2).max(120),
   email: z.email(),
-  phone: z.string().max(30).optional().or(z.literal("")),
+  phone: z
+    .string()
+    .regex(/^\+[1-9]\d{7,14}$/, "Phone must include country code, e.g. +919876543210"),
   address: z.string().max(300).optional().or(z.literal("")),
   country: z.string().max(100).optional().or(z.literal("")),
   clientType: z.enum(["domestic", "international"]),

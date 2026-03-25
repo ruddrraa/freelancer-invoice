@@ -5,6 +5,7 @@ import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardTitle } from "@/components/ui/card";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
 import { apiFetch } from "@/lib/fetcher";
@@ -13,7 +14,7 @@ import { formatMoney } from "@/lib/utils";
 type Invoice = {
   _id: string;
   invoiceNumber: string;
-  clientSnapshot: { name: string; email: string };
+  clientSnapshot: { name: string; email: string; phone?: string };
   issueDate: string;
   dueDate: string;
   status: "pending" | "paid" | "overdue";
@@ -35,6 +36,9 @@ export default function InvoiceListPage() {
   const [status, setStatus] = useState("");
   const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(false);
+  const [deleteInvoiceId, setDeleteInvoiceId] = useState<string | null>(null);
+  const [deletingInvoice, setDeletingInvoice] = useState(false);
+  const [actionMessage, setActionMessage] = useState("");
 
   const query = useMemo(() => {
     const params = new URLSearchParams();
@@ -74,10 +78,65 @@ export default function InvoiceListPage() {
     await load();
   }
 
+  async function sendToWhatsapp(invoice: Invoice) {
+    try {
+      setActionMessage("");
+      const appUrl = window.location.origin;
+      const pdfUrl = `${appUrl}/api/invoices/${invoice._id}/pdf`;
+      const download = await fetch(pdfUrl, { credentials: "include" });
+      if (!download.ok) {
+        throw new Error("Unable to prepare PDF for WhatsApp");
+      }
+
+      const blob = await download.blob();
+      const file = new File([blob], `${invoice.invoiceNumber}.pdf`, {
+        type: "application/pdf",
+      });
+
+      const shareText = `Invoice ${invoice.invoiceNumber} for ${invoice.clientSnapshot.name}`;
+
+      if (
+        typeof navigator !== "undefined" &&
+        "share" in navigator &&
+        "canShare" in navigator &&
+        navigator.canShare?.({ files: [file] })
+      ) {
+        await navigator.share({
+          files: [file],
+          title: `Invoice ${invoice.invoiceNumber}`,
+          text: shareText,
+        });
+        return;
+      }
+
+      const text = encodeURIComponent(`${shareText}. PDF: ${pdfUrl}`);
+      const phone = (invoice.clientSnapshot.phone || "").replace(/[^\d]/g, "");
+      const whatsappUrl = phone
+        ? `https://wa.me/${phone}?text=${text}`
+        : `https://wa.me/?text=${text}`;
+      window.open(whatsappUrl, "_blank", "noopener,noreferrer");
+      setActionMessage("Browser direct PDF share support nahi karta, WhatsApp link fallback open kiya hai.");
+    } catch (e) {
+      setActionMessage(e instanceof Error ? e.message : "Failed to open WhatsApp flow");
+    }
+  }
+
+  async function deleteInvoice() {
+    if (!deleteInvoiceId) return;
+    setDeletingInvoice(true);
+    try {
+      await apiFetch(`/api/invoices/${deleteInvoiceId}`, { method: "DELETE" });
+      await load();
+      setDeleteInvoiceId(null);
+    } finally {
+      setDeletingInvoice(false);
+    }
+  }
+
   return (
     <div className="space-y-4 fade-up">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <h2 className="text-2xl font-semibold text-slate-900 dark:text-white">Invoices</h2>
+        <h2 className="text-2xl font-semibold text-slate-900">Invoices</h2>
         <Link href="/invoices/new">
           <Button>Create Invoice</Button>
         </Link>
@@ -114,7 +173,7 @@ export default function InvoiceListPage() {
       <Card>
         <CardTitle>Invoice History</CardTitle>
         <div className="mt-3 overflow-x-auto">
-          <table className="w-full min-w-[760px] text-left text-sm">
+          <table className="w-full min-w-190 text-left text-sm">
             <thead className="text-slate-500">
               <tr>
                 <th className="py-2">Invoice</th>
@@ -145,8 +204,14 @@ export default function InvoiceListPage() {
                       <Button size="sm" variant="secondary" onClick={() => sendInvoice(invoice._id)}>
                         Email
                       </Button>
+                      <Button size="sm" variant="secondary" onClick={() => sendToWhatsapp(invoice)}>
+                        WhatsApp
+                      </Button>
                       <Button size="sm" variant="secondary" onClick={() => duplicateInvoice(invoice._id)}>
                         Duplicate
+                      </Button>
+                      <Button size="sm" variant="outline" onClick={() => setDeleteInvoiceId(invoice._id)}>
+                        Delete
                       </Button>
                       <a href={`/api/invoices/${invoice._id}/pdf`} target="_blank">
                         <Button size="sm" variant="secondary">PDF</Button>
@@ -160,6 +225,7 @@ export default function InvoiceListPage() {
         </div>
 
         {loading ? <p className="mt-3 text-sm text-slate-500">Loading...</p> : null}
+        {actionMessage ? <p className="mt-3 text-sm text-slate-600">{actionMessage}</p> : null}
 
         <div className="mt-4 flex items-center justify-end gap-2">
           <Button variant="outline" size="sm" disabled={page <= 1} onClick={() => setPage(page - 1)}>
@@ -178,6 +244,16 @@ export default function InvoiceListPage() {
           </Button>
         </div>
       </Card>
+
+      <ConfirmDialog
+        open={Boolean(deleteInvoiceId)}
+        title="Delete invoice?"
+        description="This action is permanent and cannot be undone."
+        confirmText="Delete"
+        loading={deletingInvoice}
+        onConfirm={deleteInvoice}
+        onClose={() => (deletingInvoice ? null : setDeleteInvoiceId(null))}
+      />
     </div>
   );
 }

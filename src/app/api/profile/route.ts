@@ -20,6 +20,7 @@ export async function GET(req: NextRequest) {
     return ok({
       id: String(user._id),
       name: user.name,
+      companyName: user.companyName,
       email: user.email,
       phone: user.phone,
       address: user.address,
@@ -29,6 +30,9 @@ export async function GET(req: NextRequest) {
       paypalEmail: user.paypalEmail,
       wiseDetails: decryptSensitive(user.wiseDetailsEncrypted),
       stripePaymentLink: user.stripePaymentLink,
+      smtpSenderEmail: user.smtpSenderEmail,
+      smtpAppPassword: "",
+      smtpConfigured: Boolean(user.smtpSenderEmail && user.smtpAppPasswordEncrypted),
       defaultCurrency: user.defaultCurrency,
     });
   } catch {
@@ -47,22 +51,31 @@ export async function PUT(req: NextRequest) {
 
     await connectDb();
 
-    const updated = await User.findByIdAndUpdate(
-      userId,
-      {
-        name: parsed.data.name,
-        phone: parsed.data.phone || "",
-        address: parsed.data.address || "",
-        logoUrl: parsed.data.logoUrl || "",
-        upiId: parsed.data.upiId || "",
-        bankDetailsEncrypted: encryptSensitive(parsed.data.bankDetails || ""),
-        paypalEmail: parsed.data.paypalEmail || "",
-        wiseDetailsEncrypted: encryptSensitive(parsed.data.wiseDetails || ""),
-        stripePaymentLink: parsed.data.stripePaymentLink || "",
-        defaultCurrency: parsed.data.defaultCurrency,
-      },
-      { new: true }
-    );
+    const user = await User.findById(userId);
+    if (!user) {
+      return fail("User not found", 404);
+    }
+
+    user.name = parsed.data.name;
+    user.companyName = parsed.data.companyName || "";
+    user.phone = parsed.data.phone || "";
+    user.address = parsed.data.address || "";
+    user.logoUrl = parsed.data.logoUrl || "";
+    user.upiId = parsed.data.upiId || "";
+    user.bankDetailsEncrypted = encryptSensitive(parsed.data.bankDetails || "");
+    user.paypalEmail = parsed.data.paypalEmail || "";
+    user.wiseDetailsEncrypted = encryptSensitive(parsed.data.wiseDetails || "");
+    user.stripePaymentLink = parsed.data.stripePaymentLink || "";
+    user.smtpSenderEmail = parsed.data.smtpSenderEmail || "";
+    user.defaultCurrency = parsed.data.defaultCurrency;
+
+    if (parsed.data.smtpAppPassword) {
+      user.smtpAppPasswordEncrypted = encryptSensitive(parsed.data.smtpAppPassword);
+    } else if (!user.smtpSenderEmail) {
+      user.smtpAppPasswordEncrypted = "";
+    }
+
+    const updated = await user.save();
 
     if (!updated) {
       return fail("User not found", 404);
@@ -71,6 +84,7 @@ export async function PUT(req: NextRequest) {
     return ok({
       id: String(updated._id),
       name: updated.name,
+      companyName: updated.companyName,
       email: updated.email,
       phone: updated.phone,
       address: updated.address,
@@ -80,6 +94,9 @@ export async function PUT(req: NextRequest) {
       paypalEmail: updated.paypalEmail,
       wiseDetails: decryptSensitive(updated.wiseDetailsEncrypted),
       stripePaymentLink: updated.stripePaymentLink,
+      smtpSenderEmail: updated.smtpSenderEmail,
+      smtpAppPassword: "",
+      smtpConfigured: Boolean(updated.smtpSenderEmail && updated.smtpAppPasswordEncrypted),
       defaultCurrency: updated.defaultCurrency,
     });
   } catch {

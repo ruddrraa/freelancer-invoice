@@ -2,11 +2,15 @@ import * as React from "react";
 import { cn } from "@/lib/utils";
 
 export function Select(props: React.SelectHTMLAttributes<HTMLSelectElement>) {
+  const hasValue = Object.prototype.hasOwnProperty.call(props, "value");
+  const safeValue = props.value ?? "";
+
   return (
     <select
       {...props}
+      value={hasValue ? safeValue : props.value}
       className={cn(
-        "h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm outline-none transition focus:border-slate-400 focus:ring-2 focus:ring-slate-200",
+        "h-10 w-full rounded-lg border border-zinc-200 bg-white px-3 text-sm text-zinc-800 outline-none transition focus:border-zinc-400 focus:ring-2 focus:ring-zinc-200",
         props.className
       )}
     />
