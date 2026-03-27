@@ -40,9 +40,9 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           <div className="flex flex-wrap items-center gap-3">
             <Link
               href="/dashboard"
-              className="grid h-10 w-10 place-items-center rounded-xl bg-zinc-900 text-white"
+              className="grid h-10 w-10 place-items-center rounded-xl  text-black"
             >
-              <span className="text-sm font-bold">FI</span>
+              <span className="text-sm font-bold">FREEINVLANCER</span>
             </Link>
 
             <nav className="flex flex-1 flex-wrap items-center gap-2 md:justify-center">
