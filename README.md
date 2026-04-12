@@ -1,4 +1,4 @@
-# Freelancer Invoice Platform
+# RelancePay Platform
 
 Production-grade, scalable invoice management SaaS for freelancers handling both India and international clients.
 
@@ -157,12 +157,15 @@ Recommended base variables:
 - `NEXT_PUBLIC_APP_URL`: public app URL (local/prod)
 - `MONGODB_DB_NAME`: DB name (default `freelancer_invoice`)
 - `JWT_EXPIRES_IN`: token expiry (default `7d`)
-- `MAIL_FROM`: sender identity, example `Freelancer Invoice <no-reply@yourdomain.com>`
+- `MAIL_FROM`: sender identity, example `RelancePay <no-reply@yourdomain.com>`
 
 Optional integrations (fill only if using that feature):
 
 - Google OAuth:
 	- `GOOGLE_CLIENT_ID`
+- Search console verification:
+	- `GOOGLE_SITE_VERIFICATION`
+	- `BING_SITE_VERIFICATION`
 - Cloudinary uploads:
 	- `CLOUDINARY_CLOUD_NAME`
 	- `CLOUDINARY_API_KEY`

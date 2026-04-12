@@ -6,6 +6,9 @@ const nextConfig: NextConfig = {
     root: path.resolve(__dirname),
   },
   serverExternalPackages: ["pdfkit"],
+
+  // Disable all dev indicators
+  devIndicators: false,
 };
 
 export default nextConfig;

@@ -42,7 +42,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               href="/dashboard"
               className="grid h-10 w-10 place-items-center rounded-xl  text-black"
             >
-              <span className="text-sm font-bold">FREEINVLANCER</span>
+              <img className="h-6 w-6" src="/RelancePayLogoTrans.png" alt="" />
+              <h1 className="text-xl "><b>Relance</b>Pay</h1>
             </Link>
 
             <nav className="flex flex-1 flex-wrap items-center gap-2 md:justify-center">
