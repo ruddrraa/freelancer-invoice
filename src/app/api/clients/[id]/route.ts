@@ -6,28 +6,35 @@ import Client from "@/models/Client";
 
 export const runtime = "nodejs";
 
-type Params = { params: Promise<{ id: string }> };
+type RouteContext = { params: Promise<{ id: string }> };
 
-export async function GET(req: NextRequest, { params }: Params) {
+export async function GET(req: NextRequest, context: RouteContext) {
   try {
     const userId = getUserIdOrThrow(req);
-    const { id } = await params;
+    const { id } = await context.params;
     await connectDb();
 
     const client = await Client.findOne({ _id: asObjectId(id), userId });
     if (!client) {
       return fail("Client not found", 404);
     }
+
     return ok(client);
   } catch (error) {
-    return fail(error instanceof Error && error.message === "INVALID_ID" ? "Invalid id" : "Unauthorized", 401);
+    if (error instanceof Error && error.message === "INVALID_ID") {
+      return fail("Invalid id", 400);
+    }
+    if (error instanceof Error && error.message === "UNAUTHORIZED") {
+      return fail("Unauthorized", 401);
+    }
+    return fail("Failed to fetch client", 500);
   }
 }
 
-export async function PUT(req: NextRequest, { params }: Params) {
+export async function PUT(req: NextRequest, context: RouteContext) {
   try {
     const userId = getUserIdOrThrow(req);
-    const { id } = await params;
+    const { id } = await context.params;
     const body = await req.json();
     const parsed = clientSchema.safeParse(body);
     if (!parsed.success) {
@@ -40,27 +47,42 @@ export async function PUT(req: NextRequest, { params }: Params) {
       parsed.data,
       { new: true }
     );
+
     if (!updated) {
       return fail("Client not found", 404);
     }
+
     return ok(updated);
-  } catch {
-    return fail("Unauthorized", 401);
+  } catch (error) {
+    if (error instanceof Error && error.message === "INVALID_ID") {
+      return fail("Invalid id", 400);
+    }
+    if (error instanceof Error && error.message === "UNAUTHORIZED") {
+      return fail("Unauthorized", 401);
+    }
+    return fail("Failed to update client", 500);
   }
 }
 
-export async function DELETE(req: NextRequest, { params }: Params) {
+export async function DELETE(req: NextRequest, context: RouteContext) {
   try {
     const userId = getUserIdOrThrow(req);
-    const { id } = await params;
+    const { id } = await context.params;
     await connectDb();
 
     const deleted = await Client.findOneAndDelete({ _id: asObjectId(id), userId });
     if (!deleted) {
       return fail("Client not found", 404);
     }
+
     return ok({ id: deleted._id });
-  } catch {
-    return fail("Unauthorized", 401);
+  } catch (error) {
+    if (error instanceof Error && error.message === "INVALID_ID") {
+      return fail("Invalid id", 400);
+    }
+    if (error instanceof Error && error.message === "UNAUTHORIZED") {
+      return fail("Unauthorized", 401);
+    }
+    return fail("Failed to delete client", 500);
   }
 }

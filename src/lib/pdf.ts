@@ -69,7 +69,7 @@ export function generateInvoicePdf(payload: PdfPayload): Promise<Buffer> {
     // Header with logo
     const logoY = 52;
     if (payload.issuerLogo) {
-      doc.image(payload.issuerLogo, left, logoY, { fit: [178, 32], align: "left", valign: "top" });
+      doc.image(payload.issuerLogo, left, logoY, { fit: [178, 32] });
     } else {
       doc.roundedRect(left, logoY, 32, 32, 6).fill("#171717");
       doc
