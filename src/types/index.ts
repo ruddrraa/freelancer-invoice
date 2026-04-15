@@ -1,6 +1,6 @@
 export type InvoiceStatus = "pending" | "paid" | "overdue";
 export type ClientType = "domestic" | "international";
-export type TaxType = "percentage" | "fixed";
+export type TaxType = "percentage" | "fixed" | "gst" | "igst" | "sgst";
 
 export type LineItemInput = {
   name: string;

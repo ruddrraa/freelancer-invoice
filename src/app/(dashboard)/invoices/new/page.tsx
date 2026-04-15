@@ -12,6 +12,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { apiFetch } from "@/lib/fetcher";
 import { calculateInvoiceTotals } from "@/lib/invoice";
 import { generateInvoiceNumber } from "@/lib/utils";
+import { TaxType } from "@/types";
 
 type Client = {
   _id: string;
@@ -50,7 +51,7 @@ export default function NewInvoicePage() {
   const [issueDate, setIssueDate] = useState(new Date().toISOString().slice(0, 10));
   const [dueDate, setDueDate] = useState(new Date().toISOString().slice(0, 10));
   const [currency, setCurrency] = useState("INR");
-  const [taxType, setTaxType] = useState<"percentage" | "fixed">("percentage");
+  const [taxType, setTaxType] = useState<TaxType>("gst");
   const [taxValue, setTaxValue] = useState(0);
   const [notes, setNotes] = useState("");
   const [terms, setTerms] = useState("");
@@ -429,9 +430,12 @@ export default function NewInvoicePage() {
               <div>
                 <p className="mb-1 text-xs text-zinc-500">Tax</p>
                 <div className="grid grid-cols-[1fr_1fr] gap-2">
-                  <Select value={taxType} onChange={(e) => setTaxType(e.target.value as "percentage" | "fixed")}>
-                    <option value="percentage">% Tax</option>
-                    <option value="fixed">Fixed</option>
+                  <Select value={taxType} onChange={(e) => setTaxType(e.target.value as TaxType)}>
+                    <option value="gst">GST (%)</option>
+                    <option value="igst">GST (IGST %)</option>
+                    <option value="sgst">GST (SGST %)</option>
+                    <option value="fixed">Fixed Tax Amount</option>
+                    <option value="percentage">Generic % Tax</option>
                   </Select>
                   <Input type="number" min={0} value={taxValue} onChange={(e) => setTaxValue(Number(e.target.value || 0))} />
                 </div>
@@ -514,6 +518,8 @@ export default function NewInvoicePage() {
               lineItems={lineItems}
               subtotal={totals.subtotal}
               taxAmount={totals.taxAmount}
+              taxType={taxType}
+              taxValue={taxValue}
               total={totals.total}
               clientType={clientType}
               notes={notes}

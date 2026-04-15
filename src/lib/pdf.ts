@@ -1,4 +1,6 @@
 import PDFDocument from "pdfkit";
+import { getTaxSummaryLabel } from "@/lib/invoice";
+import { TaxType } from "@/types";
 
 function formatInvoiceMoney(value: number, currency: string) {
   const formatted = new Intl.NumberFormat("en-IN", {
@@ -27,6 +29,8 @@ type PdfPayload = {
   lineItems: Array<{ name: string; quantity: number; price: number }>;
   subtotal: number;
   taxAmount: number;
+  taxType: TaxType;
+  taxValue: number;
   total: number;
   notes?: string;
   terms?: string;
@@ -63,207 +67,280 @@ export function generateInvoicePdf(payload: PdfPayload): Promise<Buffer> {
     doc.font("Helvetica");
 
     // Header with logo
+    const logoY = 52;
     if (payload.issuerLogo) {
-      doc.image(payload.issuerLogo, left, 52, { fit: [32, 32] });
+      doc.image(payload.issuerLogo, left, logoY, { fit: [178, 32], align: "left", valign: "top" });
     } else {
-      doc.roundedRect(left, 52, 32, 32, 6).fill("#171717");
+      doc.roundedRect(left, logoY, 32, 32, 6).fill("#171717");
       doc
         .fillColor("#ffffff")
         .font("Helvetica-Bold")
         .fontSize(12)
-        .text("FI", left, 62, { width: 32, align: "center" });
+        .text("FI", left, logoY + 10, { width: 32, align: "center" });
       doc.fillColor(textColor);
     }
 
-    doc.font("Helvetica-Bold").fontSize(30).text("Invoice", left, 95);
-    const metaColA = right - 140;
+    const titleY = 95;
+    doc.font("Helvetica-Bold").fontSize(30).text("Invoice", left, titleY);
+    const titleBottomY = doc.y;
+
+    const metaWidth = 140;
+    const metaColA = right - metaWidth;
+    const metaTop = 58;
     doc
       .font("Helvetica-Bold")
       .fontSize(10)
       .fillColor(muted)
-      .text("Invoice no.", metaColA, 58, { width: 120, align: "right" })
-      .text(payload.invoiceNumber, metaColA, 74, { width: 120, align: "right" })
-      .text("Issue date", metaColA, 98, { width: 120, align: "right" })
-      .text(payload.issueDate, metaColA, 114, { width: 120, align: "right" });
+      .text("Invoice no.", metaColA, metaTop, { width: metaWidth, align: "right" })
+      .fillColor(textColor)
+      .fontSize(11)
+      .text(payload.invoiceNumber, metaColA, metaTop + 16, { width: metaWidth, align: "right" })
+      .fillColor(muted)
+      .font("Helvetica-Bold")
+      .fontSize(10)
+      .text("Issue date", metaColA, metaTop + 42, { width: metaWidth, align: "right" })
+      .fillColor(textColor)
+      .fontSize(11)
+      .text(payload.issueDate, metaColA, metaTop + 58, { width: metaWidth, align: "right" });
 
-    doc.moveTo(left, 146).lineTo(right, 146).lineWidth(1).strokeColor(rule).stroke();
+    const dividerOneY = Math.max(logoY + 32, titleBottomY, metaTop + 74) + 16;
+    doc.moveTo(left, dividerOneY).lineTo(right, dividerOneY).lineWidth(1).strokeColor(rule).stroke();
 
     // Billed / Issued blocks
-    doc.fillColor(muted).font("Helvetica-Bold").fontSize(10).text("Billed to", left, 168);
-    let billedY = 184;
-    doc.fillColor(textColor).font("Helvetica").fontSize(12).text(payload.clientName, left, billedY, {
-      width: 240,
+    const blockTop = dividerOneY + 22;
+    const blockGap = 38;
+    const blockWidth = (contentWidth - blockGap) / 2;
+    const billedX = left;
+    const issuedX = left + blockWidth + blockGap;
+
+    doc.fillColor(muted).font("Helvetica-Bold").fontSize(10).text("BILLED TO", billedX, blockTop);
+    let billedY = blockTop + 16;
+    doc.fillColor(textColor).font("Helvetica-Bold").fontSize(12).text(payload.clientName || "Client name", billedX, billedY, {
+      width: blockWidth,
     });
     billedY = doc.y + 2;
 
     if (payload.clientEmail) {
-      doc.fillColor(muted).fontSize(10).text(payload.clientEmail, left, billedY, { width: 240 });
+      doc.fillColor(muted).font("Helvetica").fontSize(10).text(payload.clientEmail, billedX, billedY, { width: blockWidth });
       billedY = doc.y + 2;
     }
     if (payload.clientPhone) {
-      doc.fillColor(muted).fontSize(10).text(payload.clientPhone, left, billedY, { width: 240 });
+      doc.fillColor(muted).font("Helvetica").fontSize(10).text(payload.clientPhone, billedX, billedY, { width: blockWidth });
       billedY = doc.y + 2;
     }
     if (payload.clientAddress) {
-      doc.fillColor(muted).fontSize(10).text(payload.clientAddress, left, billedY, { width: 240, lineGap: 1 });
+      doc
+        .fillColor(muted)
+        .font("Helvetica")
+        .fontSize(10)
+        .text(payload.clientAddress, billedX, billedY, { width: blockWidth, lineGap: 1 });
       billedY = doc.y + 2;
     }
 
-    doc.fillColor(muted).font("Helvetica-Bold").fontSize(10).text("Issued by", left + 278, 168);
-    doc.fillColor(textColor).font("Helvetica").fontSize(12);
-    let issuerBottomY = 184;
+    doc.fillColor(muted).font("Helvetica-Bold").fontSize(10).text("ISSUED BY", issuedX, blockTop);
+    let issuerBottomY = blockTop + 16;
     if (payload.issuerCompanyName) {
       doc
         .font("Helvetica-Bold")
-        .text(payload.issuerCompanyName, left + 278, 184)
-        .font("Helvetica")
-        .text(payload.issuerName, left + 278, 200)
+        .fontSize(12)
+        .fillColor(textColor)
+        .text(payload.issuerCompanyName, issuedX, issuerBottomY, { width: blockWidth })
+        .font("Helvetica-Bold")
+        .fontSize(12)
+        .fillColor(textColor)
+        .text(payload.issuerName, issuedX, doc.y + 2, { width: blockWidth })
         .fillColor(muted)
         .fontSize(10)
-        .text(payload.issuerEmail, left + 278, 216);
+        .font("Helvetica")
+        .text(payload.issuerEmail, issuedX, doc.y + 2, { width: blockWidth });
 
-      let issuerY = 230;
+      let issuerY = doc.y + 2;
       if (payload.issuerPhone) {
-        doc.text(payload.issuerPhone, left + 278, issuerY);
+        doc.text(payload.issuerPhone, issuedX, issuerY, { width: blockWidth });
         issuerY = doc.y + 2;
       }
       if (payload.issuerAddress) {
-        doc.text(payload.issuerAddress, left + 278, issuerY, { width: 220 });
+        doc.text(payload.issuerAddress, issuedX, issuerY, { width: blockWidth, lineGap: 1 });
         issuerY = doc.y + 2;
       }
       issuerBottomY = issuerY;
     } else {
       doc
-        .font("Helvetica")
-        .text(payload.issuerName, left + 278, 184)
+        .font("Helvetica-Bold")
+        .fontSize(12)
+        .fillColor(textColor)
+        .text(payload.issuerName, issuedX, issuerBottomY, { width: blockWidth })
         .fillColor(muted)
+        .font("Helvetica")
         .fontSize(10)
-        .text(payload.issuerEmail, left + 278, 202);
+        .text(payload.issuerEmail, issuedX, doc.y + 2, { width: blockWidth });
 
-      let issuerY = 216;
+      let issuerY = doc.y + 2;
       if (payload.issuerPhone) {
-        doc.text(payload.issuerPhone, left + 278, issuerY);
+        doc.text(payload.issuerPhone, issuedX, issuerY, { width: blockWidth });
         issuerY = doc.y + 2;
       }
       if (payload.issuerAddress) {
-        doc.text(payload.issuerAddress, left + 278, issuerY, { width: 220 });
+        doc.text(payload.issuerAddress, issuedX, issuerY, { width: blockWidth, lineGap: 1 });
         issuerY = doc.y + 2;
       }
       issuerBottomY = issuerY;
     }
 
     const detailsBottomY = Math.max(billedY, issuerBottomY);
-    const amountDueY = detailsBottomY + 10;
-    const tableRuleY = amountDueY + 37;
+    const amountDueY = detailsBottomY + 16;
 
     // Amount due line
     doc
       .fillColor(textColor)
       .font("Helvetica-Bold")
       .fontSize(16)
-      .text(amountDueLine, left, amountDueY);
+      .text(amountDueLine, left, amountDueY, { width: contentWidth });
 
+    const tableRuleY = doc.y + 14;
     doc.moveTo(left, tableRuleY).lineTo(right, tableRuleY).lineWidth(1).strokeColor(rule).stroke();
 
     // Line item header
-    const tableTop = tableRuleY + 23;
+    const tableTop = tableRuleY + 18;
+    const qtyWidth = 52;
+    const unitPriceWidth = 112;
+    const totalWidth = 112;
+    const productWidth = contentWidth - qtyWidth - unitPriceWidth - totalWidth;
+
     const col1 = left;
-    const col2 = right - 220;
-    const col3 = right - 145;
-    const col4 = right - 75;
+    const col2 = col1 + productWidth;
+    const col3 = col2 + qtyWidth;
+    const col4 = col3 + unitPriceWidth;
 
     doc
       .font("Helvetica-Bold")
       .fontSize(9)
-      .fillColor(textColor)
+      .fillColor(muted)
       .text("Product or service", col1, tableTop)
-      .text("Qty", col2, tableTop, { width: 55, align: "right" })
-      .text("Unit price", col3, tableTop, { width: 70, align: "right" })
-      .text("Total", col4, tableTop, { width: 75, align: "right" });
+      .text("Qty", col2, tableTop, { width: qtyWidth, align: "right" })
+      .text("Unit price", col3, tableTop, { width: unitPriceWidth, align: "right" })
+      .text("Total", col4, tableTop, { width: totalWidth, align: "right" });
 
     doc.moveTo(left, tableTop + 18).lineTo(right, tableTop + 18).lineWidth(1).strokeColor(rule).stroke();
 
-    let y = tableTop + 26;
+    let y = tableTop + 22;
 
     payload.lineItems.forEach((item) => {
+      const name = item.name || "Line item";
+      const qty = String(item.quantity);
       const itemTotal = item.quantity * item.price;
+      const unitPrice = formatInvoiceMoney(item.price, payload.currency);
+      const totalPrice = formatInvoiceMoney(itemTotal, payload.currency);
+
+      doc.font("Helvetica").fontSize(10);
+      const rowHeight =
+        Math.max(
+          18,
+          doc.heightOfString(name, { width: productWidth - 12 }),
+          doc.heightOfString(qty, { width: qtyWidth, align: "right" }),
+          doc.heightOfString(unitPrice, { width: unitPriceWidth, align: "right" }),
+          doc.heightOfString(totalPrice, { width: totalWidth, align: "right" })
+        ) + 6;
+
+      const rowTextY = y + 2;
       doc
         .font("Helvetica")
         .fontSize(10)
         .fillColor(textColor)
-        .text(item.name, col1, y, { width: col2 - col1 - 16 })
-        .text(String(item.quantity), col2, y, { width: 55, align: "right" })
-        .text(formatInvoiceMoney(item.price, payload.currency), col3, y, { width: 70, align: "right" })
-        .text(formatInvoiceMoney(itemTotal, payload.currency), col4, y, { width: 75, align: "right" });
-      y += 24;
+        .text(name, col1, rowTextY, { width: productWidth - 12 })
+        .text(qty, col2, rowTextY, { width: qtyWidth, align: "right" })
+        .text(unitPrice, col3, rowTextY, { width: unitPriceWidth, align: "right" })
+        .text(totalPrice, col4, rowTextY, { width: totalWidth, align: "right" });
+
+      y += rowHeight;
+      doc.moveTo(left, y).lineTo(right, y).lineWidth(0.8).strokeColor(rule).stroke();
     });
 
-    doc.moveTo(left, y - 4).lineTo(right, y - 4).lineWidth(0.8).strokeColor(rule).stroke();
-
     // Totals block
-    const totalsX = left + 255;
-    const totalsY = y + 8;
+    const totalsY = y + 10;
+    const totalsLabelX = right - 286;
+    const totalsAmountWidth = 130;
+    const totalsAmountX = right - totalsAmountWidth;
 
     doc
       .font("Helvetica")
       .fontSize(10)
       .fillColor(muted)
-      .text("Total excluding tax", totalsX, totalsY)
-      .text(formatInvoiceMoney(payload.subtotal, payload.currency), col4, totalsY, { width: 75, align: "right" })
-      .text("Total tax", totalsX, totalsY + 20)
-      .text(formatInvoiceMoney(payload.taxAmount, payload.currency), col4, totalsY + 20, {
-        width: 75,
+      .text("Total excluding tax", totalsLabelX, totalsY)
+      .text(formatInvoiceMoney(payload.subtotal, payload.currency), totalsAmountX, totalsY, {
+        width: totalsAmountWidth,
+        align: "right",
+      })
+      .text(getTaxSummaryLabel(payload.taxType, payload.taxValue), totalsLabelX, totalsY + 20)
+      .text(formatInvoiceMoney(payload.taxAmount, payload.currency), totalsAmountX, totalsY + 20, {
+        width: totalsAmountWidth,
         align: "right",
       });
 
-    doc.moveTo(totalsX, totalsY + 46).lineTo(right, totalsY + 46).lineWidth(0.8).strokeColor(rule).stroke();
+    doc.moveTo(totalsLabelX, totalsY + 46).lineTo(right, totalsY + 46).lineWidth(0.8).strokeColor(rule).stroke();
 
     doc
       .font("Helvetica-Bold")
       .fontSize(14)
       .fillColor(textColor)
-      .text("Amount Due", totalsX, totalsY + 58)
-      .text(formatInvoiceMoney(payload.total, payload.currency), col4, totalsY + 58, { width: 75, align: "right" });
+      .text("Amount Due", totalsLabelX, totalsY + 58)
+      .text(formatInvoiceMoney(payload.total, payload.currency), totalsAmountX, totalsY + 56, {
+        width: totalsAmountWidth,
+        align: "right",
+      });
 
     // Payment details section
-    const paymentTop = totalsY + 118;
+    const paymentTop = totalsY + 102;
     doc.moveTo(left, paymentTop).lineTo(right, paymentTop).lineWidth(1).strokeColor(rule).stroke();
     doc.font("Helvetica-Bold").fontSize(12).fillColor(textColor).text("Ways to pay", left, paymentTop + 14);
 
-    const sectionTop = paymentTop + 38;
+    const sectionTop = paymentTop + 36;
+    let paymentBottomY = sectionTop;
 
     if (payload.clientType === "domestic") {
+      const qrSize = 110;
+      const hasQr = Boolean(payload.upiQrPng);
+      const paymentTextWidth = hasQr ? contentWidth - qrSize - 24 : contentWidth;
+
       doc.font("Helvetica").fontSize(11).fillColor(textColor);
+      let paymentTextY = sectionTop;
       if (payload.paymentDetails.upiId) {
-        doc.text(`UPI: ${payload.paymentDetails.upiId}`, left, sectionTop, { width: 330 });
+        doc.text(`UPI: ${payload.paymentDetails.upiId}`, left, paymentTextY, { width: paymentTextWidth });
       } else {
-        doc.fillColor(muted).text("UPI ID not added", left, sectionTop, { width: 330 });
+        doc.fillColor(muted).text("UPI ID not added", left, paymentTextY, { width: paymentTextWidth });
       }
+      paymentTextY = doc.y + 10;
 
       if (payload.paymentDetails.bankDetails) {
         doc
           .fillColor(textColor)
           .font("Helvetica-Bold")
           .fontSize(10)
-          .text("Bank account", left, sectionTop + 24)
+          .text("Bank account", left, paymentTextY)
           .font("Helvetica")
           .fontSize(10)
-          .text(payload.paymentDetails.bankDetails, left, sectionTop + 40, {
-            width: 330,
+          .text(payload.paymentDetails.bankDetails, left, doc.y + 4, {
+            width: paymentTextWidth,
             lineGap: 2,
           });
+        paymentTextY = doc.y + 2;
       }
+      paymentBottomY = paymentTextY;
 
       if (payload.upiQrPng) {
-        doc.image(payload.upiQrPng, right - 124, sectionTop - 2, {
-          fit: [110, 110],
+        const qrX = right - qrSize;
+        const qrY = sectionTop;
+        doc.image(payload.upiQrPng, qrX, qrY, {
+          fit: [qrSize, qrSize],
           align: "right",
         });
         doc
           .fillColor(muted)
           .font("Helvetica")
           .fontSize(8)
-          .text("Scan to pay", right - 124, sectionTop + 112, { width: 110, align: "center" });
+          .text("Scan to pay", qrX, qrY + qrSize + 2, { width: qrSize, align: "center" });
+
+        paymentBottomY = Math.max(paymentBottomY, qrY + qrSize + 14);
       }
     } else {
       const lines = [
@@ -276,31 +353,36 @@ export function generateInvoicePdf(payload: PdfPayload): Promise<Buffer> {
       (lines.length ? lines : ["International payment details not added yet"]).forEach((line, index) => {
         doc.text(line, left, sectionTop + index * 16, { width: contentWidth });
       });
+
+      paymentBottomY = sectionTop + Math.max(lines.length, 1) * 16;
     }
+
+    let notesBaseY = paymentBottomY + 14;
 
     if (payload.notes) {
       doc
         .font("Helvetica-Bold")
         .fontSize(10)
         .fillColor(textColor)
-        .text("Notes", left, sectionTop + 140)
+        .text("Notes", left, notesBaseY)
         .font("Helvetica")
         .fontSize(9)
         .fillColor(muted)
-        .text(payload.notes, left, sectionTop + 154, { width: contentWidth });
+        .text(payload.notes, left, notesBaseY + 14, { width: contentWidth });
+
+      notesBaseY = doc.y + 8;
     }
 
     if (payload.terms) {
-      const termsBase = payload.notes ? sectionTop + 196 : sectionTop + 140;
       doc
         .font("Helvetica-Bold")
         .fontSize(10)
         .fillColor(textColor)
-        .text("Terms", left, termsBase)
+        .text("Terms", left, notesBaseY)
         .font("Helvetica")
         .fontSize(9)
         .fillColor(muted)
-        .text(payload.terms, left, termsBase + 14, { width: contentWidth });
+        .text(payload.terms, left, notesBaseY + 14, { width: contentWidth });
     }
 
     doc.end();

@@ -32,7 +32,7 @@ const InvoiceSchema = new mongoose.Schema(
       logoUrl: { type: String, default: "" },
     },
     lineItems: { type: [LineItemSchema], required: true },
-    taxType: { type: String, enum: ["percentage", "fixed"], required: true },
+    taxType: { type: String, enum: ["percentage", "fixed", "gst", "igst", "sgst"], required: true },
     taxValue: { type: Number, default: 0 },
     subtotal: { type: Number, required: true },
     taxAmount: { type: Number, required: true },
@@ -67,6 +67,10 @@ InvoiceSchema.index({ userId: 1, status: 1, createdAt: -1 });
 export type InvoiceDocument = InferSchemaType<typeof InvoiceSchema> & {
   _id: mongoose.Types.ObjectId;
 };
+
+if (process.env.NODE_ENV !== "production" && mongoose.models.Invoice) {
+  delete mongoose.models.Invoice;
+}
 
 const Invoice = (mongoose.models.Invoice as Model<InvoiceDocument>) ||
   mongoose.model<InvoiceDocument>("Invoice", InvoiceSchema);

@@ -34,11 +34,20 @@ export function decryptSensitive(payload?: string) {
   }
 
   const [ivHex, authTagHex, encryptedHex] = payload.split(":");
-  const decipher = crypto.createDecipheriv("aes-256-gcm", key, Buffer.from(ivHex, "hex"));
-  decipher.setAuthTag(Buffer.from(authTagHex, "hex"));
-  const decrypted = Buffer.concat([
-    decipher.update(Buffer.from(encryptedHex, "hex")),
-    decipher.final(),
-  ]);
-  return decrypted.toString("utf8");
+  if (!ivHex || !authTagHex || !encryptedHex) {
+    return "";
+  }
+
+  try {
+    const decipher = crypto.createDecipheriv("aes-256-gcm", key, Buffer.from(ivHex, "hex"));
+    decipher.setAuthTag(Buffer.from(authTagHex, "hex"));
+    const decrypted = Buffer.concat([
+      decipher.update(Buffer.from(encryptedHex, "hex")),
+      decipher.final(),
+    ]);
+    return decrypted.toString("utf8");
+  } catch {
+    // Gracefully handle stale/invalid encrypted payloads to avoid blocking core workflows.
+    return "";
+  }
 }

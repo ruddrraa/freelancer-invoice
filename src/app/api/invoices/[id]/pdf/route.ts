@@ -111,6 +111,8 @@ export async function GET(req: NextRequest, { params }: Params) {
       lineItems,
       subtotal: invoice.subtotal,
       taxAmount: invoice.taxAmount,
+      taxType: invoice.taxType,
+      taxValue: invoice.taxValue,
       total: invoice.total,
       notes: invoice.notes,
       terms: invoice.terms,

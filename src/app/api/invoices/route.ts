@@ -152,6 +152,12 @@ export async function POST(req: NextRequest) {
     if (error instanceof Error && error.message.includes("E11000")) {
       return fail("Invoice number already exists", 409);
     }
-    return fail("Unauthorized", 401);
+    if (error instanceof Error && error.message === "UNAUTHORIZED") {
+      return fail("Unauthorized", 401);
+    }
+    if (error instanceof Error) {
+      return fail(error.message || "Failed to create invoice", 500);
+    }
+    return fail("Failed to create invoice", 500);
   }
 }

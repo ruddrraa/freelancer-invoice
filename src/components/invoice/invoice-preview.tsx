@@ -1,3 +1,6 @@
+import { getTaxSummaryLabel } from "@/lib/invoice";
+import { TaxType } from "@/types";
+
 function formatInvoiceMoney(value: number, currency: string) {
   const formatted = new Intl.NumberFormat("en-IN", {
     minimumFractionDigits: 2,
@@ -31,6 +34,8 @@ type PreviewProps = {
   lineItems: Array<{ name: string; quantity: number; price: number }>;
   subtotal: number;
   taxAmount: number;
+  taxType: TaxType;
+  taxValue: number;
   total: number;
   clientType: "domestic" | "international";
   paymentDetails: {
@@ -125,7 +130,7 @@ export function InvoicePreview(props: PreviewProps) {
           <span>{formatInvoiceMoney(props.subtotal, props.currency)}</span>
         </p>
         <p className="flex justify-between text-zinc-600">
-          <span>Total tax</span>
+          <span>{getTaxSummaryLabel(props.taxType, props.taxValue)}</span>
           <span>{formatInvoiceMoney(props.taxAmount, props.currency)}</span>
         </p>
         <p className="flex justify-between border-t border-zinc-200 pt-2 text-base font-semibold">

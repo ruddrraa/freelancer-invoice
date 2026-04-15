@@ -58,7 +58,7 @@ export const invoiceSchema = z.object({
     address: z.string().optional(),
   }),
   lineItems: z.array(lineItemSchema).min(1),
-  taxType: z.enum(["percentage", "fixed"]).default("percentage"),
+  taxType: z.enum(["percentage", "fixed", "gst", "igst", "sgst"]).default("gst"),
   taxValue: z.number().min(0).default(0),
   currency: z.string().min(3).max(8),
   notes: z.string().max(600).optional().or(z.literal("")),
