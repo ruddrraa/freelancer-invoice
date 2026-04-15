@@ -30,6 +30,7 @@ const InvoiceSchema = new mongoose.Schema(
       phone: { type: String, default: "" },
       address: { type: String, default: "" },
       logoUrl: { type: String, default: "" },
+      signatureUrl: { type: String, default: "" },
     },
     lineItems: { type: [LineItemSchema], required: true },
     taxType: { type: String, enum: ["percentage", "fixed", "gst", "igst", "sgst"], required: true },

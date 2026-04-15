@@ -9,6 +9,7 @@ const UserSchema = new mongoose.Schema(
     phone: { type: String, default: "" },
     address: { type: String, default: "" },
     logoUrl: { type: String, default: "" },
+    signatureUrl: { type: String, default: "" },
     upiId: { type: String, default: "" },
     bankDetailsEncrypted: { type: String, default: "" },
     paypalEmail: { type: String, default: "" },

@@ -31,6 +31,7 @@ type Profile = {
   phone: string;
   address: string;
   logoUrl: string;
+  signatureUrl: string;
   upiId: string;
   bankDetails: string;
   paypalEmail: string;
@@ -41,8 +42,44 @@ type Profile = {
 
 type LineItem = { name: string; quantity: number; price: number };
 
+type InvoiceForEdit = {
+  _id: string;
+  invoiceNumber: string;
+  issueDate: string;
+  dueDate: string;
+  clientId?: string;
+  clientType: "domestic" | "international";
+  clientSnapshot: {
+    name: string;
+    email: string;
+    phone?: string;
+    address?: string;
+  };
+  lineItems: LineItem[];
+  taxType: TaxType;
+  taxValue: number;
+  currency: string;
+  notes?: string;
+  terms?: string;
+};
+
+function toInputDate(value: string) {
+  if (!value) return new Date().toISOString().slice(0, 10);
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.getTime())) return new Date().toISOString().slice(0, 10);
+  return parsed.toISOString().slice(0, 10);
+}
+
 export default function NewInvoicePage() {
   const router = useRouter();
+  const [editInvoiceId, setEditInvoiceId] = useState<string | null>(null);
+  const isEditMode = Boolean(editInvoiceId);
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    setEditInvoiceId(params.get("edit"));
+  }, []);
+
   const [profile, setProfile] = useState<Profile | null>(null);
   const [clients, setClients] = useState<Client[]>([]);
   const [clientId, setClientId] = useState("");
@@ -63,6 +100,12 @@ export default function NewInvoicePage() {
   const [loadingDraft, setLoadingDraft] = useState(false);
   const [loadingSend, setLoadingSend] = useState(false);
   const [addingClient, setAddingClient] = useState(false);
+  const [editClientSnapshot, setEditClientSnapshot] = useState<{
+    name: string;
+    email: string;
+    phone?: string;
+    address?: string;
+  }>({ name: "", email: "", phone: "", address: "" });
   const [newClient, setNewClient] = useState({
     name: "",
     email: "",
@@ -83,10 +126,58 @@ export default function NewInvoicePage() {
       ]);
       setProfile(user);
       setClients(clientList);
-      setCurrency(user.defaultCurrency || "INR");
+      if (!isEditMode) {
+        setCurrency(user.defaultCurrency || "INR");
+      }
     }
     load().catch((e) => setError(e.message));
-  }, []);
+  }, [isEditMode]);
+
+  useEffect(() => {
+    if (!isEditMode || !editInvoiceId) {
+      return;
+    }
+
+    let cancelled = false;
+
+    async function loadInvoiceForEdit() {
+      try {
+        setError("");
+        const invoice = await apiFetch<InvoiceForEdit>(`/api/invoices/${editInvoiceId}`);
+        if (cancelled) {
+          return;
+        }
+
+        setInvoiceNumber(invoice.invoiceNumber || generateInvoiceNumber());
+        setIssueDate(toInputDate(invoice.issueDate));
+        setDueDate(toInputDate(invoice.dueDate));
+        setClientType(invoice.clientType || "domestic");
+        setCurrency(invoice.currency || "INR");
+        setTaxType(invoice.taxType || "gst");
+        setTaxValue(invoice.taxValue || 0);
+        setLineItems(invoice.lineItems?.length ? invoice.lineItems : [{ name: "", quantity: 1, price: 0 }]);
+        setNotes(invoice.notes || "");
+        setTerms(invoice.terms || "");
+        setClientId(invoice.clientId ? String(invoice.clientId) : "");
+        setEditClientSnapshot({
+          name: invoice.clientSnapshot?.name || "",
+          email: invoice.clientSnapshot?.email || "",
+          phone: invoice.clientSnapshot?.phone || "",
+          address: invoice.clientSnapshot?.address || "",
+        });
+      } catch (e) {
+        if (!cancelled) {
+          setError(e instanceof Error ? e.message : "Failed to load invoice for editing");
+        }
+      }
+    }
+
+    loadInvoiceForEdit();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [editInvoiceId, isEditMode]);
 
   const selectedClient = useMemo(
     () => clients.find((item) => item._id === clientId) || null,
@@ -194,7 +285,21 @@ export default function NewInvoicePage() {
   async function createInvoice(sendInvoice: boolean) {
     try {
       setError("");
-      if (!selectedClient) {
+      const resolvedClientSnapshot = selectedClient
+        ? {
+            name: selectedClient.name || "",
+            email: selectedClient.email || "",
+            phone: selectedClient.phone || "",
+            address: selectedClient.address || "",
+          }
+        : {
+            name: editClientSnapshot.name || "",
+            email: editClientSnapshot.email || "",
+            phone: editClientSnapshot.phone || "",
+            address: editClientSnapshot.address || "",
+          };
+
+      if (!selectedClient && (!isEditMode || !resolvedClientSnapshot.name || !resolvedClientSnapshot.email)) {
         setError("Please select a customer");
         return;
       }
@@ -205,20 +310,18 @@ export default function NewInvoicePage() {
         setLoadingDraft(true);
       }
 
-      const created = await apiFetch<{ _id: string }>("/api/invoices", {
-        method: "POST",
+      const requestUrl = isEditMode && editInvoiceId ? `/api/invoices/${editInvoiceId}` : "/api/invoices";
+      const requestMethod = isEditMode ? "PUT" : "POST";
+
+      const saved = await apiFetch<{ _id: string }>(requestUrl, {
+        method: requestMethod,
         body: JSON.stringify({
           invoiceNumber,
           issueDate,
           dueDate,
           clientId: selectedClient?._id,
           clientType,
-          clientSnapshot: {
-            name: selectedClient?.name || "",
-            email: selectedClient?.email || "",
-            phone: selectedClient?.phone || "",
-            address: selectedClient?.address || "",
-          },
+          clientSnapshot: resolvedClientSnapshot,
           lineItems,
           taxType,
           taxValue,
@@ -228,13 +331,21 @@ export default function NewInvoicePage() {
         }),
       });
 
+      const targetInvoiceId = isEditMode && editInvoiceId ? editInvoiceId : saved._id;
+
       if (sendInvoice) {
-        await apiFetch(`/api/invoices/${created._id}/send`, { method: "POST" });
+        await apiFetch(`/api/invoices/${targetInvoiceId}/send`, { method: "POST" });
       }
 
       router.push("/invoices");
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Failed to create invoice");
+      setError(
+        e instanceof Error
+          ? e.message
+          : isEditMode
+            ? "Failed to update invoice"
+            : "Failed to create invoice"
+      );
     } finally {
       setLoadingDraft(false);
       setLoadingSend(false);
@@ -254,17 +365,17 @@ export default function NewInvoicePage() {
               Back to invoices
             </button>
             <h1 className="text-4xl font-semibold tracking-tight text-zinc-900">
-              Create New Invoice
+              {isEditMode ? "Edit Invoice" : "Create New Invoice"}
             </h1>
           </div>
 
           <div className="flex items-center gap-2">
             <Button variant="secondary" onClick={() => createInvoice(false)} disabled={loadingDraft || loadingSend}>
-              {loadingDraft ? "Saving..." : "Save as Draft"}
+              {loadingDraft ? "Saving..." : isEditMode ? "Update Draft" : "Save as Draft"}
             </Button>
             <Button onClick={() => createInvoice(true)} disabled={loadingDraft || loadingSend}>
               <Send size={14} className="mr-1" />
-              {loadingSend ? "Sending..." : "Send Invoice"}
+              {loadingSend ? "Sending..." : isEditMode ? "Update & Send" : "Send Invoice"}
             </Button>
           </div>
         </div>
@@ -515,6 +626,7 @@ export default function NewInvoicePage() {
               issuerPhone={profile?.phone || ""}
               issuerAddress={profile?.address || ""}
               issuerLogoUrl={profile?.logoUrl || ""}
+              issuerSignatureUrl={profile?.signatureUrl || ""}
               lineItems={lineItems}
               subtotal={totals.subtotal}
               taxAmount={totals.taxAmount}

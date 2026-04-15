@@ -210,6 +210,9 @@ export default function InvoiceListPage() {
                       <Button size="sm" variant="secondary" onClick={() => duplicateInvoice(invoice._id)}>
                         Duplicate
                       </Button>
+                      <Link href={`/invoices/new?edit=${invoice._id}`}>
+                        <Button size="sm" variant="secondary">Edit PDF</Button>
+                      </Link>
                       <Button size="sm" variant="outline" onClick={() => setDeleteInvoiceId(invoice._id)}>
                         Delete
                       </Button>

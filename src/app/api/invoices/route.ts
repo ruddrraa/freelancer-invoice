@@ -121,6 +121,7 @@ export async function POST(req: NextRequest) {
         phone: user.phone,
         address: user.address,
         logoUrl: user.logoUrl,
+        signatureUrl: user.signatureUrl,
       },
       lineItems: parsed.data.lineItems,
       taxType: parsed.data.taxType,

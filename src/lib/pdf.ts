@@ -21,6 +21,7 @@ type PdfPayload = {
   issuerPhone?: string;
   issuerAddress?: string;
   issuerLogo?: Buffer;
+  issuerSignature?: Buffer;
   clientName: string;
   clientEmail: string;
   clientPhone?: string;
@@ -341,6 +342,30 @@ export function generateInvoicePdf(payload: PdfPayload): Promise<Buffer> {
           .text("Scan to pay", qrX, qrY + qrSize + 2, { width: qrSize, align: "center" });
 
         paymentBottomY = Math.max(paymentBottomY, qrY + qrSize + 14);
+
+        if (payload.issuerSignature) {
+          const signatureY = qrY + qrSize + 22;
+          doc.image(payload.issuerSignature, qrX, signatureY, { fit: [qrSize, 42] });
+          doc
+            .fillColor(muted)
+            .font("Helvetica")
+            .fontSize(8)
+            .text("Signature", qrX, signatureY + 44, { width: qrSize, align: "center" });
+
+          paymentBottomY = Math.max(paymentBottomY, signatureY + 56);
+        }
+      } else if (payload.issuerSignature) {
+        const signatureWidth = 120;
+        const signatureX = right - signatureWidth;
+        const signatureY = sectionTop;
+        doc.image(payload.issuerSignature, signatureX, signatureY, { fit: [signatureWidth, 42] });
+        doc
+          .fillColor(muted)
+          .font("Helvetica")
+          .fontSize(8)
+          .text("Signature", signatureX, signatureY + 44, { width: signatureWidth, align: "center" });
+
+        paymentBottomY = Math.max(paymentBottomY, signatureY + 56);
       }
     } else {
       const lines = [
@@ -355,6 +380,20 @@ export function generateInvoicePdf(payload: PdfPayload): Promise<Buffer> {
       });
 
       paymentBottomY = sectionTop + Math.max(lines.length, 1) * 16;
+
+      if (payload.issuerSignature) {
+        const signatureWidth = 120;
+        const signatureX = right - signatureWidth;
+        const signatureY = sectionTop;
+        doc.image(payload.issuerSignature, signatureX, signatureY, { fit: [signatureWidth, 42] });
+        doc
+          .fillColor(muted)
+          .font("Helvetica")
+          .fontSize(8)
+          .text("Signature", signatureX, signatureY + 44, { width: signatureWidth, align: "center" });
+
+        paymentBottomY = Math.max(paymentBottomY, signatureY + 56);
+      }
     }
 
     let notesBaseY = paymentBottomY + 14;

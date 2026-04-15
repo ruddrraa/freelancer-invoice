@@ -76,6 +76,7 @@ export async function POST(req: NextRequest, { params }: Params) {
       phone: "",
       address: "",
       logoUrl: "",
+      signatureUrl: "",
     };
     const client = invoice.clientSnapshot || {
       name: "Client",
@@ -85,6 +86,7 @@ export async function POST(req: NextRequest, { params }: Params) {
     };
     const lineItems = invoice.lineItems || [];
     const issuerLogo = await fetchImageBuffer(issuer.logoUrl);
+    const issuerSignature = await fetchImageBuffer(issuer.signatureUrl || user?.signatureUrl || "");
     const upiQrPng =
       invoice.clientType === "domestic"
         ? await buildUpiQrPng(
@@ -107,6 +109,7 @@ export async function POST(req: NextRequest, { params }: Params) {
       issuerPhone: issuer.phone,
       issuerAddress: issuer.address,
       issuerLogo,
+      issuerSignature,
       clientName: client.name,
       clientEmail: client.email,
       clientPhone: client.phone,

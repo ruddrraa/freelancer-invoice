@@ -25,6 +25,7 @@ export async function GET(req: NextRequest) {
       phone: user.phone,
       address: user.address,
       logoUrl: user.logoUrl,
+      signatureUrl: user.signatureUrl,
       upiId: user.upiId,
       bankDetails: decryptSensitive(user.bankDetailsEncrypted),
       paypalEmail: user.paypalEmail,
@@ -61,6 +62,7 @@ export async function PUT(req: NextRequest) {
     user.phone = parsed.data.phone || "";
     user.address = parsed.data.address || "";
     user.logoUrl = parsed.data.logoUrl || "";
+    user.signatureUrl = parsed.data.signatureUrl || "";
     user.upiId = parsed.data.upiId || "";
     user.bankDetailsEncrypted = encryptSensitive(parsed.data.bankDetails || "");
     user.paypalEmail = parsed.data.paypalEmail || "";
@@ -89,6 +91,7 @@ export async function PUT(req: NextRequest) {
       phone: updated.phone,
       address: updated.address,
       logoUrl: updated.logoUrl,
+      signatureUrl: updated.signatureUrl,
       upiId: updated.upiId,
       bankDetails: decryptSensitive(updated.bankDetailsEncrypted),
       paypalEmail: updated.paypalEmail,

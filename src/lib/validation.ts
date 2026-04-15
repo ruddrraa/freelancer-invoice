@@ -17,6 +17,7 @@ export const profileSchema = z.object({
   phone: z.string().max(30).optional().or(z.literal("")),
   address: z.string().max(300).optional().or(z.literal("")),
   logoUrl: z.url().optional().or(z.literal("")),
+  signatureUrl: z.url().optional().or(z.literal("")),
   upiId: z.string().max(100).optional().or(z.literal("")),
   bankDetails: z.string().max(800).optional().or(z.literal("")),
   paypalEmail: z.email().optional().or(z.literal("")),

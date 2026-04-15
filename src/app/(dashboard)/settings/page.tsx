@@ -16,6 +16,7 @@ type Profile = {
   phone: string;
   address: string;
   logoUrl: string;
+  signatureUrl: string;
   upiId: string;
   bankDetails: string;
   paypalEmail: string;
@@ -41,6 +42,7 @@ const defaultProfile: Profile = {
   phone: "",
   address: "",
   logoUrl: "",
+  signatureUrl: "",
   upiId: "",
   bankDetails: "",
   paypalEmail: "",
@@ -57,6 +59,7 @@ export default function SettingsPage() {
   const [clients, setClients] = useState<Client[]>([]);
   const [status, setStatus] = useState("");
   const [uploadingLogo, setUploadingLogo] = useState(false);
+  const [uploadingSignature, setUploadingSignature] = useState(false);
   const [deleteClientId, setDeleteClientId] = useState<string | null>(null);
   const [deletingClient, setDeletingClient] = useState(false);
 
@@ -175,6 +178,51 @@ export default function SettingsPage() {
     }
   }
 
+  async function uploadSignature(event: ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0];
+    if (!file) {
+      return;
+    }
+
+    try {
+      setUploadingSignature(true);
+      setStatus("Uploading signature...");
+
+      const sign = await apiFetch<{
+        timestamp: number;
+        signature: string;
+        folder: string;
+        cloudName: string;
+        apiKey: string;
+      }>("/api/uploads/cloudinary-sign", { method: "POST" });
+
+      const formData = new FormData();
+      formData.append("file", file);
+      formData.append("api_key", sign.apiKey);
+      formData.append("timestamp", String(sign.timestamp));
+      formData.append("signature", sign.signature);
+      formData.append("folder", sign.folder);
+
+      const response = await fetch(`https://api.cloudinary.com/v1_1/${sign.cloudName}/image/upload`, {
+        method: "POST",
+        body: formData,
+      });
+      const result = (await response.json()) as { secure_url?: string; error?: { message?: string } };
+
+      if (!response.ok || !result.secure_url) {
+        throw new Error(result.error?.message || "Signature upload failed");
+      }
+
+      setProfile((prev) => ({ ...prev, signatureUrl: result.secure_url || "" }));
+      setStatus("Signature uploaded. Click Save Profile to persist it.");
+    } catch (e) {
+      setStatus(e instanceof Error ? e.message : "Failed to upload signature");
+    } finally {
+      setUploadingSignature(false);
+      event.target.value = "";
+    }
+  }
+
   return (
     <div className="space-y-4 fade-up">
       <h2 className="text-2xl font-semibold text-slate-900">Settings</h2>
@@ -195,6 +243,17 @@ export default function SettingsPage() {
             {profile.logoUrl ? (
               // eslint-disable-next-line @next/next/no-img-element
               <img src={profile.logoUrl} alt="Profile logo" className="h-10 w-auto rounded-md border border-zinc-200 object-cover" />
+            ) : null}
+          </div>
+          <div className="space-y-2">
+            <Input value={profile.signatureUrl} onChange={(e) => setProfile({ ...profile, signatureUrl: e.target.value })} placeholder="Signature URL" />
+            <label className="inline-flex cursor-pointer items-center text-xs font-medium text-zinc-700 hover:text-zinc-900">
+              <input type="file" accept="image/*" className="hidden" onChange={uploadSignature} disabled={uploadingSignature} />
+              {uploadingSignature ? "Uploading signature..." : "Upload signature"}
+            </label>
+            {profile.signatureUrl ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={profile.signatureUrl} alt="Profile signature" className="h-12 w-auto rounded-md border border-zinc-200 object-contain" />
             ) : null}
           </div>
           <Input value={profile.upiId} onChange={(e) => setProfile({ ...profile, upiId: e.target.value })} placeholder="UPI ID" />

@@ -3,6 +3,7 @@ import { asObjectId, fail, getUserIdOrThrow } from "@/lib/api";
 import { connectDb } from "@/lib/db";
 import { generateInvoicePdf } from "@/lib/pdf";
 import Invoice from "@/models/Invoice";
+import User from "@/models/User";
 import QRCode from "qrcode";
 
 export const runtime = "nodejs";
@@ -56,6 +57,7 @@ export async function GET(req: NextRequest, { params }: Params) {
     if (!invoice) {
       return fail("Invoice not found", 404);
     }
+    const user = await User.findById(userId).select("signatureUrl").lean();
 
     const paymentSnapshot = invoice.paymentDetailsSnapshot || {
       upiId: "",
@@ -72,6 +74,7 @@ export async function GET(req: NextRequest, { params }: Params) {
       phone: "",
       address: "",
       logoUrl: "",
+      signatureUrl: "",
     };
     const client = invoice.clientSnapshot || {
       name: "Client",
@@ -81,6 +84,7 @@ export async function GET(req: NextRequest, { params }: Params) {
     };
     const lineItems = invoice.lineItems || [];
     const issuerLogo = await fetchImageBuffer(issuer.logoUrl);
+    const issuerSignature = await fetchImageBuffer(issuer.signatureUrl || user?.signatureUrl || "");
     const upiQrPng =
       invoice.clientType === "domestic"
         ? await buildUpiQrPng(
@@ -103,6 +107,7 @@ export async function GET(req: NextRequest, { params }: Params) {
       issuerPhone: issuer.phone,
       issuerAddress: issuer.address,
       issuerLogo,
+      issuerSignature,
       clientName: client.name,
       clientEmail: client.email,
       clientPhone: client.phone,

@@ -31,6 +31,7 @@ type PreviewProps = {
   issuerPhone?: string;
   issuerAddress?: string;
   issuerLogoUrl?: string;
+  issuerSignatureUrl?: string;
   lineItems: Array<{ name: string; quantity: number; price: number }>;
   subtotal: number;
   taxAmount: number;
@@ -141,20 +142,33 @@ export function InvoicePreview(props: PreviewProps) {
 
       <div className="mt-4 border-t border-zinc-200 pt-3 text-[11px]">
         <p className="mb-2 text-xs font-semibold uppercase tracking-wide">Ways to pay</p>
-        {props.clientType === "domestic" ? (
-          <div className="space-y-1">
-            {props.paymentDetails.upiId ? <p>UPI: {props.paymentDetails.upiId}</p> : <p>UPI ID not added</p>}
-            {props.paymentDetails.bankDetails ? (
-              <p className="whitespace-pre-line">Bank account: {props.paymentDetails.bankDetails}</p>
-            ) : null}
-          </div>
-        ) : (
-          <div className="space-y-1">
-            {props.paymentDetails.paypal ? <p>PayPal: {props.paymentDetails.paypal}</p> : null}
-            {props.paymentDetails.wise ? <p>Wise: {props.paymentDetails.wise}</p> : null}
-            {props.paymentDetails.stripe ? <p>Stripe: {props.paymentDetails.stripe}</p> : null}
-          </div>
-        )}
+        <div className="flex items-start justify-between gap-4">
+          {props.clientType === "domestic" ? (
+            <div className="space-y-1">
+              {props.paymentDetails.upiId ? <p>UPI: {props.paymentDetails.upiId}</p> : <p>UPI ID not added</p>}
+              {props.paymentDetails.bankDetails ? (
+                <p className="whitespace-pre-line">Bank account: {props.paymentDetails.bankDetails}</p>
+              ) : null}
+            </div>
+          ) : (
+            <div className="space-y-1">
+              {props.paymentDetails.paypal ? <p>PayPal: {props.paymentDetails.paypal}</p> : null}
+              {props.paymentDetails.wise ? <p>Wise: {props.paymentDetails.wise}</p> : null}
+              {props.paymentDetails.stripe ? <p>Stripe: {props.paymentDetails.stripe}</p> : null}
+            </div>
+          )}
+          {props.issuerSignatureUrl ? (
+            <div className="text-right">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={props.issuerSignatureUrl}
+                alt="Issuer signature"
+                className="max-h-14 w-auto object-contain"
+              />
+              <p className="mt-1 text-[10px] uppercase tracking-wide text-zinc-500">Signature</p>
+            </div>
+          ) : null}
+        </div>
       </div>
 
       {props.notes ? (

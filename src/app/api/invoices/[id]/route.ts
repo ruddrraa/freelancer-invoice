@@ -4,6 +4,7 @@ import { connectDb } from "@/lib/db";
 import { calculateInvoiceTotals, deriveInvoiceStatus } from "@/lib/invoice";
 import { invoiceSchema } from "@/lib/validation";
 import Invoice from "@/models/Invoice";
+import User from "@/models/User";
 
 export const runtime = "nodejs";
 type Params = { params: Promise<{ id: string }> };
@@ -35,6 +36,11 @@ export async function PUT(req: NextRequest, { params }: Params) {
     }
 
     await connectDb();
+    const user = await User.findById(userId);
+    if (!user) {
+      return fail("User not found", 404);
+    }
+
     const totals = calculateInvoiceTotals(
       parsed.data.lineItems,
       parsed.data.taxType,
@@ -50,6 +56,15 @@ export async function PUT(req: NextRequest, { params }: Params) {
         dueDate,
         clientType: parsed.data.clientType,
         clientSnapshot: parsed.data.clientSnapshot,
+        issuerSnapshot: {
+          name: user.name,
+          companyName: user.companyName,
+          email: user.email,
+          phone: user.phone,
+          address: user.address,
+          logoUrl: user.logoUrl,
+          signatureUrl: user.signatureUrl,
+        },
         lineItems: parsed.data.lineItems,
         taxType: parsed.data.taxType,
         taxValue: parsed.data.taxValue,
