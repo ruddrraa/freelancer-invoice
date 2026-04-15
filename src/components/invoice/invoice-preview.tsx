@@ -20,6 +20,8 @@ type PreviewProps = {
   currency: string;
   clientName: string;
   clientEmail?: string;
+  clientPhone?: string;
+  clientAddress?: string;
   issuerName: string;
   issuerCompanyName?: string;
   issuerEmail?: string;
@@ -52,7 +54,7 @@ export function InvoicePreview(props: PreviewProps) {
             <img
               src={props.issuerLogoUrl}
               alt="Issuer logo"
-              className="mb-2 h-8 w-8 rounded-md object-cover"
+              className="mb-2 h-8 w-auto rounded-md object-cover"
             />
           ) : (
             <div className="mb-2 grid h-8 w-8 place-items-center rounded-md bg-zinc-900 text-xs font-bold text-white">
@@ -74,6 +76,10 @@ export function InvoicePreview(props: PreviewProps) {
           <p className="mb-1 text-xs uppercase tracking-wide text-zinc-500">Billed to</p>
           <p className="font-semibold">{props.clientName || "Client name"}</p>
           {props.clientEmail ? <p className="text-[11px] text-zinc-500">{props.clientEmail}</p> : null}
+          {props.clientPhone ? <p className="text-[11px] text-zinc-500">{props.clientPhone}</p> : null}
+          {props.clientAddress ? (
+            <p className="text-[11px] text-zinc-500 whitespace-pre-line">{props.clientAddress}</p>
+          ) : null}
         </div>
         <div>
           <p className="mb-1 text-xs uppercase tracking-wide text-zinc-500">Issued by</p>

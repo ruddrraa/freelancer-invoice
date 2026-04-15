@@ -194,7 +194,7 @@ export default function SettingsPage() {
             </label>
             {profile.logoUrl ? (
               // eslint-disable-next-line @next/next/no-img-element
-              <img src={profile.logoUrl} alt="Profile logo" className="h-10 w-10 rounded-md border border-zinc-200 object-cover" />
+              <img src={profile.logoUrl} alt="Profile logo" className="h-10 w-auto rounded-md border border-zinc-200 object-cover" />
             ) : null}
           </div>
           <Input value={profile.upiId} onChange={(e) => setProfile({ ...profile, upiId: e.target.value })} placeholder="UPI ID" />

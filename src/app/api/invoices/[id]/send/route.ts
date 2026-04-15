@@ -80,6 +80,8 @@ export async function POST(req: NextRequest, { params }: Params) {
     const client = invoice.clientSnapshot || {
       name: "Client",
       email: "",
+      phone: "",
+      address: "",
     };
     const lineItems = invoice.lineItems || [];
     const issuerLogo = await fetchImageBuffer(issuer.logoUrl);
@@ -107,6 +109,8 @@ export async function POST(req: NextRequest, { params }: Params) {
       issuerLogo,
       clientName: client.name,
       clientEmail: client.email,
+      clientPhone: client.phone,
+      clientAddress: client.address,
       currency: invoice.currency,
       lineItems,
       subtotal: invoice.subtotal,

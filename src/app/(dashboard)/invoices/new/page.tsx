@@ -503,6 +503,8 @@ export default function NewInvoicePage() {
               currency={currency}
               clientName={selectedClient?.name || ""}
               clientEmail={selectedClient?.email || ""}
+              clientPhone={selectedClient?.phone || ""}
+              clientAddress={selectedClient?.address || ""}
               issuerName={profile?.name || ""}
               issuerCompanyName={profile?.companyName || ""}
               issuerEmail={profile?.email || ""}

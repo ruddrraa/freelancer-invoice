@@ -21,6 +21,8 @@ type PdfPayload = {
   issuerLogo?: Buffer;
   clientName: string;
   clientEmail: string;
+  clientPhone?: string;
+  clientAddress?: string;
   currency: string;
   lineItems: Array<{ name: string; quantity: number; price: number }>;
   subtotal: number;
@@ -88,17 +90,28 @@ export function generateInvoicePdf(payload: PdfPayload): Promise<Buffer> {
 
     // Billed / Issued blocks
     doc.fillColor(muted).font("Helvetica-Bold").fontSize(10).text("Billed to", left, 168);
-    doc
-      .fillColor(textColor)
-      .font("Helvetica")
-      .fontSize(12)
-      .text(payload.clientName, left, 184)
-      .fillColor(muted)
-      .fontSize(10)
-      .text(payload.clientEmail, left, 202);
+    let billedY = 184;
+    doc.fillColor(textColor).font("Helvetica").fontSize(12).text(payload.clientName, left, billedY, {
+      width: 240,
+    });
+    billedY = doc.y + 2;
+
+    if (payload.clientEmail) {
+      doc.fillColor(muted).fontSize(10).text(payload.clientEmail, left, billedY, { width: 240 });
+      billedY = doc.y + 2;
+    }
+    if (payload.clientPhone) {
+      doc.fillColor(muted).fontSize(10).text(payload.clientPhone, left, billedY, { width: 240 });
+      billedY = doc.y + 2;
+    }
+    if (payload.clientAddress) {
+      doc.fillColor(muted).fontSize(10).text(payload.clientAddress, left, billedY, { width: 240, lineGap: 1 });
+      billedY = doc.y + 2;
+    }
 
     doc.fillColor(muted).font("Helvetica-Bold").fontSize(10).text("Issued by", left + 278, 168);
     doc.fillColor(textColor).font("Helvetica").fontSize(12);
+    let issuerBottomY = 184;
     if (payload.issuerCompanyName) {
       doc
         .font("Helvetica-Bold")
@@ -112,11 +125,13 @@ export function generateInvoicePdf(payload: PdfPayload): Promise<Buffer> {
       let issuerY = 230;
       if (payload.issuerPhone) {
         doc.text(payload.issuerPhone, left + 278, issuerY);
-        issuerY += 12;
+        issuerY = doc.y + 2;
       }
       if (payload.issuerAddress) {
         doc.text(payload.issuerAddress, left + 278, issuerY, { width: 220 });
+        issuerY = doc.y + 2;
       }
+      issuerBottomY = issuerY;
     } else {
       doc
         .font("Helvetica")
@@ -128,24 +143,30 @@ export function generateInvoicePdf(payload: PdfPayload): Promise<Buffer> {
       let issuerY = 216;
       if (payload.issuerPhone) {
         doc.text(payload.issuerPhone, left + 278, issuerY);
-        issuerY += 12;
+        issuerY = doc.y + 2;
       }
       if (payload.issuerAddress) {
         doc.text(payload.issuerAddress, left + 278, issuerY, { width: 220 });
+        issuerY = doc.y + 2;
       }
+      issuerBottomY = issuerY;
     }
+
+    const detailsBottomY = Math.max(billedY, issuerBottomY);
+    const amountDueY = detailsBottomY + 10;
+    const tableRuleY = amountDueY + 37;
 
     // Amount due line
     doc
       .fillColor(textColor)
       .font("Helvetica-Bold")
       .fontSize(16)
-      .text(amountDueLine, left, 244);
+      .text(amountDueLine, left, amountDueY);
 
-    doc.moveTo(left, 281).lineTo(right, 281).lineWidth(1).strokeColor(rule).stroke();
+    doc.moveTo(left, tableRuleY).lineTo(right, tableRuleY).lineWidth(1).strokeColor(rule).stroke();
 
     // Line item header
-    const tableTop = 304;
+    const tableTop = tableRuleY + 23;
     const col1 = left;
     const col2 = right - 220;
     const col3 = right - 145;
