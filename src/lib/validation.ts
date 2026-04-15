@@ -40,7 +40,7 @@ export const clientSchema = z.object({
 });
 
 export const lineItemSchema = z.object({
-  name: z.string().min(1).max(120),
+  name: z.string().min(1).max(500),
   quantity: z.number().min(0.01),
   price: z.number().min(0),
 });
